@@ -1,0 +1,9 @@
+{
+  "name": "secure-notes-frontend",
+  "version": "1.0.0",
+  "description": "Functional frontend for Secure Note-Taking Application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Note-Taking App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <h1>Secure Notes & Aggregations</h1>
+        <span class="tagline">RBAC, Mongoose Indexes & Aggregation Pipelines</span>
+      </div>
+      <div id="user-header-info" class="user-header hidden">
+        <div class="user-meta">
+          <span id="header-username" class="username-display"></span>
+          <span id="header-role-badge" class="badge"></span>
+          <div id="header-interests" class="interests-container"></div>
+        </div>
+        <button id="logout-btn" class="btn btn-secondary btn-sm">Logout</button>
+      </div>
+    </header>
+
+    <!-- Global Alert / Notification Banner -->
+    <div id="alert-banner" class="alert-banner hidden"></div>
+
+    <!-- AUTHENTICATION SECTION (Visible when not logged in) -->
+    <section id="auth-section" class="auth-section">
+      <div class="auth-grid">
+        <!-- Login Card -->
+        <div class="card auth-card">
+          <h2>Sign In</h2>
+          <p class="subtitle">Access your notes or manage the platform</p>
+          <form id="login-form">
+            <div class="form-group">
+              <label for="login-email">Email Address</label>
+              <input type="email" id="login-email" required placeholder="alice@example.com">
+            </div>
+            <div class="form-group">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+
+            <!-- Quick Demo Fill Buttons -->
+            <div class="demo-buttons">
+              <span class="demo-label">Quick Demo Logins:</span>
+              <div class="btn-group">
+                <button type="button" class="btn btn-outline btn-xs" id="fill-admin-btn">Demo Admin</button>
+                <button type="button" class="btn btn-outline btn-xs" id="fill-user-btn">Demo User (Alice)</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Register Card -->
+        <div class="card auth-card">
+          <h2>Create Account</h2>
+          <p class="subtitle">Register with role and interests</p>
+          <form id="register-form">
+            <div class="form-group">
+              <label for="reg-username">Username</label>
+              <input type="text" id="reg-username" required placeholder="johndoe">
+            </div>
+            <div class="form-group">
+              <label for="reg-email">Email Address</label>
+              <input type="email" id="reg-email" required placeholder="john@example.com">
+            </div>
+            <div class="form-group">
+              <label for="reg-password">Password</label>
+              <input type="password" id="reg-password" required placeholder="Min 6 characters">
+            </div>
+            <div class="form-group">
+              <label for="reg-role">Role</label>
+              <select id="reg-role">
+                <option value="user">User (Manage own notes)</option>
+                <option value="admin">Admin (Manage all users & notes)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="reg-interests">Interests (comma separated)</label>
+              <input type="text" id="reg-interests" placeholder="chess, reading, coding">
+            </div>
+            <button type="submit" class="btn btn-success btn-block">Register Account</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD SECTION (Visible when logged in) -->
+    <section id="dashboard-section" class="dashboard-section hidden">
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button class="tab-btn active" data-tab="tab-notes">Notes</button>
+        <button class="tab-btn" id="tab-btn-admin" data-tab="tab-admin">Admin Panel</button>
+        <button class="tab-btn" data-tab="tab-aggregations">Aggregation Tasks</button>
+        <button class="tab-btn" data-tab="tab-posts">Public Posts</button>
+      </nav>
+
+      <!-- TAB 1: NOTES -->
+      <div id="tab-notes" class="tab-content active">
+        <div class="content-header">
+          <div>
+            <h2>Notes Dashboard</h2>
+            <p class="section-desc" id="notes-view-desc">Manage your personal notes securely.</p>
+          </div>
+          <!-- Admin View Toggle -->
+          <div id="admin-notes-toggle" class="admin-toggle hidden">
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-all-notes">
+              <span>View Everyone's Notes (Admin Privilege)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Note Create / Edit Form -->
+        <div class="card form-card">
+          <h3 id="note-form-heading">Create New Note</h3>
+          <form id="note-form">
+            <input type="hidden" id="note-edit-id">
+            <div class="form-group">
+              <label for="note-title">Title</label>
+              <input type="text" id="note-title" required placeholder="e.g. Project Architecture Plan">
+            </div>
+            <div class="form-group">
+              <label for="note-content">Content</label>
+              <textarea id="note-content" rows="3" required placeholder="Write your note content here..."></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="note-submit-btn">Save Note</button>
+              <button type="button" class="btn btn-secondary hidden" id="note-cancel-edit-btn">Cancel Edit</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Notes List Container -->
+        <div class="notes-list-header">
+          <h3>Notes List</h3>
+          <span id="notes-count-info" class="count-badge">Loading...</span>
+        </div>
+        <div id="notes-container" class="notes-grid"></div>
+
+        <!-- Notes Pagination -->
+        <div class="pagination-bar" id="notes-pagination">
+          <button class="btn btn-sm btn-outline" id="notes-prev-btn">Previous</button>
+          <span id="notes-page-info">Page 1 of 1</span>
+          <button class="btn btn-sm btn-outline" id="notes-next-btn">Next</button>
+        </div>
+      </div>
+
+      <!-- TAB 2: ADMIN PANEL -->
+      <div id="tab-admin" class="tab-content">
+        <div class="content-header">
+          <div>
+            <h2>Admin User Management</h2>
+            <p class="section-desc">Manage system users (add, edit role, remove, and list all users with pagination).</p>
+          </div>
+        </div>
+
+        <!-- Add User Form (Admin) -->
+        <div class="card form-card">
+          <h3>Add New User</h3>
+          <form id="admin-add-user-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="admin-user-name">Username</label>
+                <input type="text" id="admin-user-name" required placeholder="username">
+              </div>
+              <div class="form-group">
+                <label for="admin-user-email">Email</label>
+                <input type="email" id="admin-user-email" required placeholder="user@example.com">
+              </div>
+              <div class="form-group">
+                <label for="admin-user-password">Password</label>
+                <input type="password" id="admin-user-password" required placeholder="Password">
+              </div>
+              <div class="form-group">
+                <label for="admin-user-role">Role</label>
+                <select id="admin-user-role">
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="admin-user-interests">Interests (comma separated)</label>
+              <input type="text" id="admin-user-interests" placeholder="chess, reading, coding">
+            </div>
+            <button type="submit" class="btn btn-primary">Add User</button>
+          </form>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card">
+          <div class="table-header">
+            <h3>Registered Users</h3>
+            <span id="users-count-info" class="count-badge"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Interests</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body"></tbody>
+            </table>
+          </div>
+          <!-- Admin Users Pagination -->
+          <div class="pagination-bar" id="users-pagination">
+            <button class="btn btn-sm btn-outline" id="users-prev-btn">Previous</button>
+            <span id="users-page-info">Page 1 of 1</span>
+            <button class="btn btn-sm btn-outline" id="users-next-btn">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: AGGREGATION TASKS -->
+      <div id="tab-aggregations" class="tab-content">
+        <div class="content-header">
+          <div>
+            <h2>MongoDB Aggregation Pipeline Demos</h2>
+            <p class="section-desc">Specific scenarios required by the technical specification.</p>
+          </div>
+        </div>
+
+        <!-- SCENARIO 1 -->
+        <div class="card aggregation-card">
+          <div class="scenario-badge">Scenario 1</div>
+          <h3>Group Users by Interests</h3>
+          <p class="scenario-context">
+            <strong>Context:</strong> User profiles contain a list of interests (e.g., <code>['chess', 'reading']</code>).<br>
+            <strong>Constraint:</strong> Exactly one <code>collection.aggregate()</code> call using <code>$unwind</code>, <code>$group</code>, and <code>$sort</code>. Supported by multikey index <code>userSchema.index({ interests: 1 })</code>.
+          </p>
+          <button id="run-agg-1-btn" class="btn btn-primary">Execute Group By Interests Aggregation</button>
+          <div id="agg-1-results" class="agg-results-container"></div>
+        </div>
+
+        <!-- SCENARIO 2 -->
+        <div class="card aggregation-card">
+          <div class="scenario-badge">Scenario 2</div>
+          <h3>Retrieve User Posts via <code>$lookup</code></h3>
+          <p class="scenario-context">
+            <strong>Context:</strong> Users write posts stored in a separate <code>Posts</code> collection. Visible to everyone.<br>
+            <strong>Constraint:</strong> Single aggregation pipeline with a <code>$lookup</code> stage. Supported by index <code>postSchema.index({ author: 1, createdAt: -1 })</code>.
+          </p>
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="agg-user-select">Select User to Inspect Posts:</label>
+              <select id="agg-user-select"></select>
+            </div>
+            <div class="form-group align-end">
+              <button id="run-agg-2-btn" class="btn btn-primary">Retrieve Posts with $lookup</button>
+            </div>
+          </div>
+          <div id="agg-2-results" class="agg-results-container"></div>
+        </div>
+      </div>
+
+      <!-- TAB 4: PUBLIC POSTS -->
+      <div id="tab-posts" class="tab-content">
+        <div class="content-header">
+          <div>
+            <h2>Public Posts (Visible to Everyone)</h2>
+            <p class="section-desc">Separate Posts collection demonstrating list operations and Scenario 2 data.</p>
+          </div>
+        </div>
+
+        <!-- Create Post Form -->
+        <div class="card form-card">
+          <h3>Publish a New Post</h3>
+          <form id="post-form">
+            <div class="form-group">
+              <label for="post-title">Post Title</label>
+              <input type="text" id="post-title" required placeholder="e.g. MongoDB Aggregation Tips">
+            </div>
+            <div class="form-group">
+              <label for="post-content">Content</label>
+              <textarea id="post-content" rows="3" required placeholder="Share your insights..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Publish Post</button>
+          </form>
+        </div>
+
+        <!-- Posts List -->
+        <div class="notes-list-header">
+          <h3>All Community Posts</h3>
+          <span id="posts-count-info" class="count-badge">Loading...</span>
+        </div>
+        <div id="posts-container" class="posts-grid"></div>
+
+        <!-- Posts Pagination -->
+        <div class="pagination-bar" id="posts-pagination">
+          <button class="btn btn-sm btn-outline" id="posts-prev-btn">Previous</button>
+          <span id="posts-page-info">Page 1 of 1</span>
+          <button class="btn btn-sm btn-outline" id="posts-next-btn">Next</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
